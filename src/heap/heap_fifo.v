@@ -21,17 +21,17 @@
 
 
 module heap_fifo(
-    input [343:0] dIn,
+    input [383:0] dIn,
     input we,
     input clk,
-    output [343:0] dOut,
+    output [383:0] dOut,
     output valid,
     output ct
     );
     
-    reg [343:0] stack[0:9];
+    reg [383:0] stack[0:9];
     reg [7:0] pointer = 0;
-    reg [343:0] dOutReg = 0;
+    reg [383:0] dOutReg = 0;
     assign dOut = dOutReg;
 
     reg validReg = 0;

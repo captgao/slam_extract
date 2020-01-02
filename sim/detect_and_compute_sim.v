@@ -32,6 +32,7 @@ module detect_and_compute_sim(
     wire wr_burst_req;
     wire[9:0] rd_burst_len;
     wire[9:0] wr_burst_len;
+	wire[9:0] addrout;
     wire[31:0] rd_burst_addr;
     wire[31:0] wr_burst_addr;
     reg rd_burst_data_valid = 0;
@@ -39,8 +40,8 @@ module detect_and_compute_sim(
     wire[63 : 0] wr_burst_data;
     wire error;
 
-	wire [343:0] heap_din;
-	wire [343:0] heap_dout;
+	wire [383:0] heap_din;
+	wire [383:0] heap_dout;
 	wire ct;
 	wire insert_en;
 	reg output_start = 0;
@@ -50,7 +51,6 @@ module detect_and_compute_sim(
 
 
 	reg [31:0] rdAddr = 0;
-	// reg [31:0] rdLen = 32;
 	reg [31:0] wrAddr = 32'h39000000;
 	reg [31:0] ctrl = 0;
 	reg rst = 0;
@@ -1153,13 +1153,11 @@ module detect_and_compute_sim(
 	(
 		.ctrl(ctrl),
 		.rdAddr(rdAddr),
-		.rdLen(32'h00280050),
 		.wrAddr(wrAddr),
 		.rstIn(rst),
 		.finish(finish),
-
+		.batch(1),
         .imgSize(32'h00400028),
-        .addrIncr(5),
                           
 		.rst(rst),      
 		.clk(clk),                             
@@ -1192,6 +1190,7 @@ module detect_and_compute_sim(
 		.out(heap_dout),
 		.output_start(output_start),
 		.outValid(heap_outvalid),
-		.outFinish(heap_outfinish)
+		.outFinish(heap_outfinish),
+		.addrout(addrout)
 	);
 endmodule

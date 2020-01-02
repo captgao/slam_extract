@@ -27,16 +27,13 @@ module detect_and_compute
 )
 (
     input [31:0] rdAddr,
-	input [31:0] rdLen,
 	input [31:0] wrAddr,
 	input [31:0] ctrl,
 	input rstIn,
 	output reg finish,
 
 	input [31:0] imgSize,
-	input [31:0] addrIncr,
-
-
+    input [31:0] batch,
 	input rst,                                 /*复位*/
 	input clk,                               /*接口时钟*/
 	output reg rd_burst_req,                          /*读请�?*/
@@ -53,7 +50,7 @@ module detect_and_compute
 	input wr_burst_finish,                      /*写完�?*/
 
     /* heap fifo */
-    output [343:0] heap_din,
+    output [383:0] heap_din,
     output heap_valid,
     output heap_ct,
     /* DEBUG */
@@ -1199,7 +1196,6 @@ reg [3:0] detectState      = 0;
 /* args */
 reg [15:0] imgWidth     = 0;
 reg [15:0] imgHeight    = 0;
-reg [15:0] rdLenInit    = 0;
 reg [15:0] rdLenExe     = 0;
 reg [31:0] rdAddrReg    = 0;
 /* counters */
@@ -1244,12 +1240,11 @@ begin
                     // args
                     imgWidth <= imgSize[15:0];
                     imgHeight <= imgSize[31:16];
-                    rdLenInit <= rdLen[15:0];
-                    rdLenExe <= rdLen[31:16];
-                    rdAddrReg <= rdAddr+{13'b0,rdLen[15:0],3'b0};
+                    rdLenExe <= imgSize[15:0];
+                    rdAddrReg <= rdAddr+{12'b0,imgSize[15:0],4'b0};
                     // axi
 					rd_burst_req <= 1;
-					rd_burst_len <= rdLen[15:0];
+                    rd_burst_len <= {12'b0,imgSize[15:0],1'b0};
 					rd_burst_addr <= rdAddr;
                     // ctrl
                     inputSwitch <= 1;
@@ -4008,7 +4003,7 @@ reg [3:0] wrBurstDataSwitch = 0;
  */
 reg [7:0] heapFaDIn = 0;
 reg heapFaWe = 0;
-reg [31:0] pixId = 0;
+reg [27:0] pixId = 0;
 reg [255:0] heapDescIn = 0;
 reg [31:0] heapIdIn = 0;
 reg [23:0] heapColIn = 0;
@@ -4038,7 +4033,7 @@ generate
 endgenerate
 always @(posedge clk)
 begin
-    heapFaIdShift[0] <= {heapFaDIn,heapIdIn};
+    heapFaIdShift[0] <= {heapIdIn,heapFaDIn};
     heapDescShift[0] <= heapDescIn;
 end
 
@@ -4046,7 +4041,7 @@ end
  */
 heap_fifo u_heap_fifo
 (
-    .dIn({heapFaIdShift[13], heapDescShift[11], heapColIn, heapRowIn}),
+    .dIn({heapFaIdShift[13], heapDescShift[11], heapColIn, 8'haa, heapRowIn, batch}),
     .we(heapCtWe),
     .clk(clk),
     .dOut(heap_din),

@@ -21,14 +21,15 @@
 
 
 module heap(
-    input [343:0] d_in,
+    input [383:0] d_in,
     input clk,
     input ct,
     input insert_en,
     input output_start,
     input rst,
-    output [343:0] out,
+    output [383:0] out,
     output reg outFinish,
+    output reg [9:0] addrout,
     output outValid
     );
 
@@ -37,21 +38,19 @@ module heap(
     reg [9:0] addrOutL[1:10];
     reg [9:0] addrOutR[1:10];
 
-    reg [343:0] dIn[1:10];
+    reg [383:0] dIn[1:10];
     reg we[1:10];
     reg weL[1:10];
     reg weR[1:10];
     reg [10:0] inCount;
-    wire [343:0] dOutL[1:10];
-    wire [343:0] dOutR[1:10];
+    wire [383:0] dOutL[1:10];
+    wire [383:0] dOutR[1:10];
 
-    reg [343:0] outRegNeg;
-    reg [343:0] outReg;
+    reg [383:0] outRegNeg;
+    reg [383:0] outReg;
     assign out = outReg;
-
     reg outValidReg;
     assign outValid = outValidReg;
-
     /* gen out
      */
     always @(negedge clk)
@@ -94,10 +93,14 @@ module heap(
             outCount <= 0;
             outKeep <= 0;
             inCount <= 0;
+            addrout <= 0;
         end
         else if(output_start || outKeep)
         begin
             // output_start only keeps 1 period, init
+            if(outValid) begin
+                addrout <= addrout + 1;
+            end
             if(output_start && outKeep == 0)
             begin
                 outKeep <= 1;
@@ -335,7 +338,7 @@ module heap(
             // cmp with d_in
             if(ct == 0)
             begin
-                if(insert_en && d_in > dOutL[1] )   // input
+                if(insert_en && d_in[351:344] > dOutL[1][351:344] )   // input
                 begin
                     we[1] <= 1;
                     dIn[1] <= d_in;
@@ -351,13 +354,13 @@ module heap(
             begin
                 if(we[1])   // this layer is inputting (parent changing)
                 begin
-                    if(dOutL[2] < dIn[1] && dOutL[2] <= dOutR[2])       // left child min
+                    if(dOutL[2][351:344]  < dIn[1][351:344]  && dOutL[2][351:344]  <= dOutR[2][351:344] )       // left child min
                     begin
                         // parent <= left child
                         // we & addrIn don't need to change
-                        dIn[1] <= dOutL[2];
+                        dIn[1][351:344]  <= dOutL[2][351:344] ;
                     end
-                    else if(dOutR[2] < dIn[1] && dOutR[2] < dOutL[2])   // right child min
+                    else if(dOutR[2][351:344]  < dIn[1][351:344]  && dOutR[2][351:344]  < dOutL[2][351:344] )   // right child min
                     begin
                         // parent <= right child
                         dIn[1] <= dOutR[2];
@@ -443,7 +446,7 @@ module heap(
                     begin
                         if(we[i-1])   // upper layer is writting
                         begin
-                            if(dOutL[i] < dIn[i-1] && dOutL[i] <= dOutR[i])       // left child min
+                            if(dOutL[i][351:344]  < dIn[i-1][351:344]  && dOutL[i][351:344]  <= dOutR[i][351:344] )       // left child min
                             begin
                                 // left child <= parent
                                 we[i] <= 1;
@@ -457,7 +460,7 @@ module heap(
                                 addrOutL[i+1] <= addrOutL[i] * 2;
                                 addrOutR[i+1] <= addrOutL[i] * 2;
                             end
-                            else if(dOutR[i] < dIn[i-1] && dOutR[i] < dOutL[i])   // right child min
+                            else if(dOutR[i][351:344]  < dIn[i-1][351:344]  && dOutR[i][351:344]  < dOutL[i][351:344] )   // right child min
                             begin
                                 // right child <= parent
                                 we[i] <= 1;
@@ -492,13 +495,13 @@ module heap(
                     begin
                         if(we[i])   // this layer is inputting (parent changing)
                         begin
-                            if(dOutL[i+1] < dIn[i] && dOutL[i+1] <= dOutR[i+1])       // left child min
+                            if(dOutL[i+1][351:344]  < dIn[i][351:344]  && dOutL[i+1][351:344]  <= dOutR[i+1][351:344] )       // left child min
                             begin
                                 // parent <= left child
                                 // we & addrIn don't need to change
                                 dIn[i] <= dOutL[i+1];
                             end
-                            else if(dOutR[i+1] < dIn[i] && dOutR[i+1] < dOutL[i+1])   // right child min
+                            else if(dOutR[i+1][351:344]  < dIn[i][351:344]  && dOutR[i+1][351:344]  < dOutL[i+1][351:344] )   // right child min
                             begin
                                 // parent <= right child
                                 dIn[i] <= dOutR[i+1];
@@ -566,7 +569,7 @@ module heap(
             begin
                 if(we[9])   // upper layer is writting
                 begin
-                    if(dOutL[10] < dIn[9] && dOutL[10] <= dOutR[10])       // left child min
+                    if(dOutL[10][351:344]  < dIn[9][351:344]  && dOutL[10][351:344]  <= dOutR[10][351:344] )       // left child min
                     begin
                         // left child <= parent
                         we[10] <= 1;
@@ -576,7 +579,7 @@ module heap(
                         addrInL[10] <= addrOutL[10];
                         dIn[10] <= dIn[9];   // dIn[1] hasn't been loaded to layer1 yet
                     end
-                    else if(dOutR[10] < dIn[9] && dOutR[10] < dOutL[10])   // right child min
+                    else if(dOutR[10][351:344]  < dIn[9][351:344]  && dOutR[10][351:344]  < dOutL[10][351:344] )   // right child min
                     begin
                         // right child <= parent
                         we[10] <= 1;

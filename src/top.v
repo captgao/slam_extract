@@ -70,11 +70,11 @@
 		input         M_AXI_RVALID,
 		output        M_AXI_RREADY,
 
-
+/*
 		output heap_outfinish,
-        output [343:0] heap_out_data,
+        output [383:0] heap_out_data,
         output heap_out_valid,
-
+*/
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -103,21 +103,36 @@
 		input wire  s00_axi_rready,
 
 
-		output reg [9:0] addrb,
+		output [31:0] addrx16,
+		output [31:0] addrx32,
 		output clkb,
 		output [255:0] dout_desc,
 		output [127:0] dout_128,
 		output reg enb,
 		output reg rstb,
-		output web
+		output [15:0] we16,
+		output [31:0] we32
 	);
 // Instantiation of Axi Bus Interface S00_AXI
 wire heap_outstart;
 genvar i;
+
 assign clkb = M_AXI_ACLK;
-assign dout_desc = heap_out_data[303:48];
-assign dout_128 = {40'b0,heap_out_data[343:304],heap_out_data[47:0]};
-assign web = heap_out_valid;
+wire[383:0] heap_out_data;
+assign dout_desc = heap_out_data[344:88];
+assign dout_128 = {heap_out_data[383:344],heap_out_data[87:0]};
+reg[9:0] addrb;
+assign addrx16 = {18'b0,addrb,4'b0};
+assign addrx32 = {17'b0,addrb,5'b0};
+generate
+	for(i = 0; i < 16; i = i + 1) begin
+		assign we16[i] = heap_out_valid;
+	end
+	for(i = 0; i < 32; i = i + 1) begin
+		assign we32[i] = heap_out_valid;
+	end
+endgenerate
+reg heap_prevfinish;
 	always @(posedge M_AXI_ACLK) begin
 		if(~rst_n || rst) begin
 			addrb <= 0;
@@ -125,7 +140,8 @@ assign web = heap_out_valid;
 			enb <=0;
 		end
 		else begin
-			if(heap_outfinish) begin
+			heap_prevfinish <= heap_outfinish;
+			if(heap_outfinish == 1 && heap_prevfinish == 0) begin
 				addrb <= 0;
 				enb <= 0;
 			end
@@ -138,11 +154,11 @@ assign web = heap_out_valid;
 		end
 	end
 	wire [31:0] rdAddr;
-	wire [31:0] rdLen;
+
 	(*mark_debug="true"*)wire [31:0] wrAddr;
 	(*mark_debug="true"*)wire [31:0] ctrl;
-	wire [31:0] arg1;
-	wire [31:0] arg2;
+	wire [31:0] imgsize;
+	wire [31:0] batch;
 	wire rst;
 	wire finish;
 	WriteTest_v1_0_S00_AXI # ( 
@@ -151,7 +167,6 @@ assign web = heap_out_valid;
 	) WriteTest_v1_0_S00_AXI_inst (
 
 		.rdAddr(rdAddr),
-		.rdLen(rdLen),
 		.wrAddr(wrAddr),
 
 		.ctrl(ctrl),
@@ -160,9 +175,8 @@ assign web = heap_out_valid;
 		.debug(debug_state),
 		.heap_outstart(heap_outstart),
 		.heap_outfinish(heap_outfinish),
-		.arg1(arg1),
-		.arg2(arg2),
-
+		.imgsize(imgsize),
+		.batch(batch),
 		.S_AXI_ACLK(s00_axi_aclk),
 		.S_AXI_ARESETN(s00_axi_aresetn),
 		.S_AXI_AWADDR(s00_axi_awaddr),
@@ -210,7 +224,7 @@ assign web = heap_out_valid;
 	(*mark_debug="true"*)wire error;
 
     
-        wire [343:0] heap_din;
+        wire [383:0] heap_din;
         wire heap_valid;
         wire heap_ct;
         wire [7:0] debug_state;
@@ -223,14 +237,12 @@ assign web = heap_out_valid;
 	(
 		.ctrl(ctrl),
 		.rdAddr(rdAddr),
-		.rdLen(rdLen),
 		.wrAddr(wrAddr),
 		.rstIn(rst),
 		.finish(finish),
 
-		.imgSize(arg1),
-		.addrIncr(arg2),
-                          
+		.imgSize(imgsize),
+		.batch(batch),
 		.rst(~rst_n),      
 		.clk(M_AXI_ACLK),                             
 		.rd_burst_req(rd_burst_req),               

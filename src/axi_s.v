@@ -22,9 +22,8 @@
 		output [31:0] heap_outstart,
 		input heap_outfinish,
 
-		output [31:0] arg1,
-		output [31:0] arg2,
-
+		output [31:0] imgsize,
+		output [31:0] batch,
 		output rst,
 		input finish,
 		input [7:0] debug,
@@ -119,9 +118,9 @@
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg0;       // read addr
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg1;       // read len
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg2;       // write addr
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg3;				// arg1
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg4;				// arg2
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg5;
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg3;				// imgsize
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg4;				// batch
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg5;		//basecoordinate
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg6;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg7;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg8;
@@ -255,10 +254,10 @@
 	      slv_reg8 <= 0;
 	      //slv_reg9 <= 0;
 	      //slv_reg10 <= 0;
-	      slv_reg11 <= 0;
+	      //slv_reg11 <= 0;
 	      slv_reg12 <= 0;
 	      slv_reg13 <= 0;
-	      // slv_reg14 <= 0;
+	      slv_reg14 <= 0;
 	      slv_reg15 <= 0;
 	    end 
 	  else begin
@@ -301,12 +300,20 @@
 	                slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
 	          4'h5:
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
-	                // Slave register 5
-	                slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+				if(slv_reg5 == 0) begin
+					for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+					if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+						// Respective byte enables are asserted as per write strobes 
+						// Slave register 5
+						slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+					end  
+				end
+				else begin
+					if(heap_outfinish) begin
+						slv_reg5 <= 0;
+					end
+				end
+
 	          4'h6:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -342,14 +349,14 @@
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 10
 	                slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  */
+	              end  
 	          4'hB:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 11
 	                slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end  */
 	          4'hC:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -364,40 +371,46 @@
 	                // Slave register 13
 	                slv_reg13[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          // 4'hE:
-	          //   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-	          //     if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	          //       // Respective byte enables are asserted as per write strobes 
-	          //       // Slave register 14
-	          //       slv_reg14[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	          //     end  
-	          4'hF:
+				
+	           4'hE:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
-	                // Slave register 15
-	                slv_reg15[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	                // Slave register 14
+	               slv_reg14[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	            end 
+				
+	          4'hF:
+			  	if (slv_reg15 == 0) begin
+					for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+					if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+						// Respective byte enables are asserted as per write strobes 
+						// Slave register 15
+						slv_reg15[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+					end  
+				end
+				else begin
+					if(finish) slv_reg15 <= 0;
+				end
 	          default : begin
-	                      slv_reg0 <= slv_reg0;
-	                      slv_reg1 <= slv_reg1;
-	                      slv_reg2 <= slv_reg2;
-	                      slv_reg3 <= slv_reg3;
-	                      slv_reg4 <= slv_reg4;
-	                      slv_reg5 <= slv_reg5;
-	                      slv_reg6 <= slv_reg6;
-	                      slv_reg7 <= slv_reg7;
-	                      slv_reg8 <= slv_reg8;
-	                      //slv_reg9 <= slv_reg9;
-	                      //slv_reg10 <= slv_reg10;
-	                      slv_reg11 <= slv_reg11;
-	                      slv_reg12 <= slv_reg12;
-	                      slv_reg13 <= slv_reg13;
-	                      // slv_reg14 <= slv_reg14;
-	                      slv_reg15 <= slv_reg15;
+			  			  if(slv_reg15 == 1) slv_reg15 <= 2;
+			  			  else if(finish || rst) slv_reg15 <= 0;
+
+						  if(slv_reg5 == 1) slv_reg5 <= 2;
+						  if(heap_outfinish) slv_reg5 <= 0;
+						  
 	                    end
 	        endcase
 	      end
+		else 
+		  begin
+			  			  if(slv_reg15 == 1) slv_reg15 <= 2;
+			  			  else if(finish || rst) slv_reg15 <= 0;
+
+						  if(slv_reg5 == 1) slv_reg5 <= 2;
+						  if(heap_outfinish) slv_reg5 <= 0;
+		  end
+		
 	  end
 	end    
 
@@ -551,24 +564,15 @@
 	assign wrAddr = slv_reg2;
 	assign rdAddr = slv_reg0;
 	assign rdLen = slv_reg1;
-	assign arg1 = slv_reg3;
-	assign arg2 = slv_reg4;
+	assign imgsize = slv_reg3;
+	assign batch = slv_reg4;
 	assign heap_outstart = slv_reg5;
 
 	
 	always @( posedge S_AXI_ACLK )
 	begin
-	            slv_reg10 <= 32'd12345678;
-            	slv_reg9 <= heap_outfinish;
-	    if ( S_AXI_ARESETN == 1'b0 )
-        begin
-            slv_reg14 <= 0;
-        end 
-	    else
-	    begin
-            slv_reg14 <= finish;
-
-	    end
+	    slv_reg10 <= 32'd12345678;
+		slv_reg11 <= debug;
 	end   
 
 	// User logic ends
